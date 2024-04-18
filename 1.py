@@ -44,36 +44,49 @@ def export_to_mp4():
     if input_file and info_dict:
         output_file = input_file.replace('.mkv', '.mp4')
         
-        # Verificar si hay múltiples pistas de subtítulos
+        # Verificar si hay múltiples pistas de audio
+        audio_tracks = [track for track in info_dict['tracks'] if track['type'] == 'audio']
         subtitle_tracks = [track for track in info_dict['tracks'] if track['type'] == 'subtitles']
+        
+        # Preguntar al usuario qué pista de audio desea utilizar si hay más de una
+        if len(audio_tracks) > 1:
+            audio_options = [f"{track['properties']['language']} (Track {track['properties']['number']})" for track in audio_tracks]
+            selected_audio = simpledialog.askstring("Elija Pista de audio", "Se encontraron varias pistas de audio. Por favor elige uno:\n" + "\n".join(audio_options))
+            selected_audio_number = int(selected_audio.split(" ")[-1])
+            selected_audio_index = next((index for index, track in enumerate(audio_tracks) if track['properties']['number'] == selected_audio_number), None)
+            
+            if selected_audio_index is None:
+                messagebox.showerror("Error", "No se encontró la pista de audio seleccionada.")
+                return
+        else:
+            selected_audio_number = audio_tracks[0]['properties']['number']
+            selected_audio_index = 0
+        
+        # Preguntar al usuario qué pista de subtítulos desea utilizar si hay más de una
         if len(subtitle_tracks) > 1:
-            # Si hay múltiples pistas de subtítulos, solicitar al usuario que elija una
             subtitle_options = [f"{track['properties']['language']} (Track {track['properties']['number']})" for track in subtitle_tracks]
             selected_subtitle = simpledialog.askstring("Elija Pista de subtítulos", "Se encontraron varias pistas de subtítulos. Por favor elige uno:\n" + "\n".join(subtitle_options))
-            # Obtener el número de pista de subtítulo seleccionado
             selected_subtitle_number = int(selected_subtitle.split(" ")[-1])
-            # Buscar el índice de la pista de subtítulos seleccionada en la lista subtitle_tracks
             selected_subtitle_index = next((index for index, track in enumerate(subtitle_tracks) if track['properties']['number'] == selected_subtitle_number), None)
+            
+            if selected_subtitle_index is None:
+                messagebox.showerror("Error", "No se encontró la pista de subtítulos seleccionada.")
+                return
         else:
-            # Si solo hay una pista de subtítulos, seleccionarla automáticamente
             selected_subtitle_number = subtitle_tracks[0]['properties']['number']
-            selected_subtitle_index = 0  # El índice es 0 ya que solo hay una pista de subtítulos
+            selected_subtitle_index = 0
         
-        if selected_subtitle_index is not None:
-            # Convertir el archivo de subtítulos SRT al formato SSA
-            subtitle_file = input_file.replace('.mkv', f'.{selected_subtitle_number}.srt')
-            subprocess.run(['ffmpeg', '-i', input_file, '-map', f'0:s:{selected_subtitle_index}', subtitle_file])
-            
-            # Ejecutar ffmpeg para exportar a MP4, especificando el archivo de subtítulos SSA
-            subprocess.run(['ffmpeg', '-hwaccel', 'auto', '-i', input_file, '-i', subtitle_file, '-y', '-v', 'error', '-c:v', 'copy', '-c:a', 'copy', '-c:s', 'mov_text', '-metadata:s:s:0', 'language=spa', '-map', '0:v?', '-map', '0:a?', '-map', '1:s:0', '-stats', '-threads', '0', output_file])
-            
-            # Eliminar el archivo de subtítulos temporal
-            os.remove(subtitle_file)
-            
-            messagebox.showinfo("Exportación completa", "El archivo se ha exportado correctamente.")
-        else:
-            messagebox.showerror("Error", "No se encontró la pista de subtítulos seleccionada.")
-
+        # Convertir el archivo de subtítulos SRT al formato SSA
+        subtitle_file = input_file.replace('.mkv', f'.{selected_subtitle_number}.srt')
+        subprocess.run(['ffmpeg', '-i', input_file, '-map', f'0:s:{selected_subtitle_index}', subtitle_file])
+        
+        # Ejecutar ffmpeg para exportar a MP4, especificando el archivo de subtítulos SSA y la pista de audio seleccionada
+        subprocess.run(['ffmpeg', '-hwaccel', 'auto', '-i', input_file, '-i', subtitle_file, '-y', '-v', 'error', '-c:v', 'copy', '-c:a', 'copy', '-c:s', 'mov_text', '-metadata:s:s:0', 'language=spa', '-metadata:s:a:0', 'language=spa', '-map', '0:v?', '-map', f'0:a:{selected_audio_index}', '-map', '1:s:0', '-stats', '-threads', '0', output_file])
+        
+        # Eliminar el archivo de subtítulos temporal
+        os.remove(subtitle_file)
+        
+        messagebox.showinfo("Exportación completa", "El archivo se ha exportado correctamente.")
 
 # Crear la ventana principal
 root = tk.Tk()
