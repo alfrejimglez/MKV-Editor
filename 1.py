@@ -7,7 +7,7 @@ import json
 info_dict = None
 
 def select_file():
-    filename = filedialog.askopenfilename(filetypes=[("MKV files", "*.mkv")])
+    filename = filedialog.askopenfilename(filetypes=[("Videos en MKV", "*.mkv")])
     if filename:
         txt_selected_file.delete(1.0, tk.END)
         txt_selected_file.insert(tk.END, filename)
@@ -49,7 +49,7 @@ def export_to_mp4():
         if len(subtitle_tracks) > 1:
             # Si hay múltiples pistas de subtítulos, solicitar al usuario que elija una
             subtitle_options = [f"{track['properties']['language']} (Track {track['properties']['number']})" for track in subtitle_tracks]
-            selected_subtitle = simpledialog.askstring("Choose Subtitle Track", "Multiple subtitle tracks found. Please choose one:\n" + "\n".join(subtitle_options))
+            selected_subtitle = simpledialog.askstring("Elija Pista de subtítulos", "Se encontraron varias pistas de subtítulos. Por favor elige uno:\n" + "\n".join(subtitle_options))
             # Obtener el número de pista de subtítulo seleccionado
             selected_subtitle_number = int(selected_subtitle.split(" ")[-1])
             # Buscar el índice de la pista de subtítulos seleccionada en la lista subtitle_tracks
@@ -70,9 +70,9 @@ def export_to_mp4():
             # Eliminar el archivo de subtítulos temporal
             os.remove(subtitle_file)
             
-            messagebox.showinfo("Export Complete", "The file has been exported successfully.")
+            messagebox.showinfo("Exportación completa", "El archivo se ha exportado correctamente.")
         else:
-            messagebox.showerror("Error", "Selected subtitle track not found.")
+            messagebox.showerror("Error", "No se encontró la pista de subtítulos seleccionada.")
 
 
 # Crear la ventana principal
@@ -83,10 +83,10 @@ root.title("MKV Editor")
 frame_file_select = tk.Frame(root)
 frame_file_select.pack(pady=10)
 
-lbl_select_file = tk.Label(frame_file_select, text="Select MKV File:")
+lbl_select_file = tk.Label(frame_file_select, text="Seleccione el archivo MKV:")
 lbl_select_file.grid(row=0, column=0)
 
-btn_browse = tk.Button(frame_file_select, text="Browse", command=select_file)
+btn_browse = tk.Button(frame_file_select, text="Seleccionar", command=select_file)
 btn_browse.grid(row=0, column=1)
 
 txt_selected_file = tk.Text(frame_file_select, width=50, height=1)
@@ -96,14 +96,14 @@ txt_selected_file.grid(row=0, column=2)
 frame_info = tk.Frame(root)
 frame_info.pack(pady=10)
 
-lbl_info = tk.Label(frame_info, text="File Information:")
+lbl_info = tk.Label(frame_info, text="Fuentes")
 lbl_info.pack()
 
 txt_info = tk.Text(frame_info, width=80, height=10)
 txt_info.pack()
 
 # Botón para exportar a MP4
-btn_export = tk.Button(root, text="Export to MP4", command=export_to_mp4)
+btn_export = tk.Button(root, text="Exportar", command=export_to_mp4)
 btn_export.pack(pady=10)
 
 root.mainloop()
