@@ -1,8 +1,10 @@
-from tkinter import filedialog, messagebox, simpledialog
+from tkinter import filedialog, messagebox, simpledialog, Text
 import tkinter as tk
 import subprocess
 import os
+import re
 import json
+import tkinter.font as font
 
 info_dict = None
 
@@ -29,22 +31,40 @@ def get_info(filename):
     subtitle_tracks = [track for track in info_dict['tracks'] if track['type'] == 'subtitles']
     # Crear una cadena de texto con la información de las pistas
     audio_info = "\n".join([f"Audio Track {track['properties']['number']}: {track['codec']} - {track['properties']['language']}" for track in audio_tracks])
-    subtitle_info = "\n".join([f"Subtitle Track {track['properties']['number']}: {track['codec']} - {track['properties']['language']}" for track in subtitle_tracks])
+    subtitle_info = "\n".join([f"Subtitle Track {track['properties']['number']}: {track['properties']['track_name']} - {track['codec']} - {track['properties']['language']}" for track in subtitle_tracks])
     # Mostrar la información en el cuadro de texto
     txt_info.delete(1.0, tk.END)
     txt_info.tag_configure("bold", font=("Helvetica", 10, "bold"))
+    txt_info.tag_configure("red", foreground="red")  # Etiqueta de estilo para texto en rojo
     # Insertar los títulos en negrita
     txt_info.insert(tk.END, "Audio Tracks:\n", "bold")
     txt_info.insert(tk.END, audio_info + "\n\n")
     txt_info.insert(tk.END, "Subtitle Tracks:\n", "bold")
     # Insertar la información de las pistas de audio y subtítulos
     txt_info.insert(tk.END, subtitle_info)
+
+    # Establecer el color rojo para el nombre del subtítulo
+    for track in subtitle_tracks:
+        start_index = txt_info.search(track['properties']['track_name'], 1.0, tk.END)
+        end_index = f"{start_index}+{len(track['properties']['track_name'])}c"
+        txt_info.tag_add("red", start_index, end_index)
+
 def export_to_mp4(input_file):
     global info_dict
     if input_file and info_dict:
-        output_file = input_file.replace('.mkv', '.mp4')
+        # Extraer el nombre de la película y el año del archivo de entrada usando expresiones regulares
+        match = re.search(r'^(.*?)\s*\((\d{4})\)', os.path.basename(input_file))
+        if match:
+            movie_name = match.group(1).strip()
+            year = match.group(2)
+            # Generar el nombre del archivo de salida
+            output_folder = os.path.join("C:\\Users", os.environ['USERNAME'], "Videos")
+            output_file = os.path.join(output_folder, f"{movie_name} ({year}).mp4")
+        else:
+            # Si no se encuentra un nombre de película y año válido, simplemente usar el nombre del archivo de entrada sin cambios
+            output_file = input_file.replace('.mkv', '.mp4')
         
-        # Verificar si hay múltiples pistas de audio
+        # Verificar si hay múltiples pistas de audio y subtítulos antes de continuar
         audio_tracks = [track for track in info_dict['tracks'] if track['type'] == 'audio']
         subtitle_tracks = [track for track in info_dict['tracks'] if track['type'] == 'subtitles']
         
@@ -129,7 +149,7 @@ frame_info.pack(pady=10)
 lbl_info = tk.Label(frame_info, text="Fuentes")
 lbl_info.pack()
 
-txt_info = tk.Text(frame_info, width=80, height=10)
+txt_info = Text(frame_info, width=80, height=10)
 txt_info.pack()
 
 root.mainloop()
