@@ -6,13 +6,16 @@ import json
 
 info_dict = None
 
-def select_file():
-    filename = filedialog.askopenfilename(filetypes=[("Videos en MKV", "*.mkv")])
-    if filename:
-        txt_selected_file.delete(1.0, tk.END)
-        txt_selected_file.insert(tk.END, filename)
-        # Obtener información del archivo MKV
-        get_info(filename)
+def select_files():
+    filenames = filedialog.askopenfilenames(filetypes=[("Videos en MKV", "*.mkv")])
+    for filename in filenames:
+        if filename:
+            txt_selected_file.delete(1.0, tk.END)
+            txt_selected_file.insert(tk.END, filename)
+            # Obtener información del archivo MKV
+            get_info(filename)
+            # Exportar a MP4 con las opciones seleccionadas
+            export_to_mp4(filename)
 
 def get_info(filename):
     global info_dict
@@ -36,11 +39,8 @@ def get_info(filename):
     txt_info.insert(tk.END, "Subtitle Tracks:\n", "bold")
     # Insertar la información de las pistas de audio y subtítulos
     txt_info.insert(tk.END, subtitle_info)
-
-
-def export_to_mp4():
+def export_to_mp4(input_file):
     global info_dict
-    input_file = txt_selected_file.get(1.0, tk.END).strip()
     if input_file and info_dict:
         output_file = input_file.replace('.mkv', '.mp4')
         
@@ -62,31 +62,48 @@ def export_to_mp4():
             selected_audio_number = audio_tracks[0]['properties']['number']
             selected_audio_index = 0
         
-        # Preguntar al usuario qué pista de subtítulos desea utilizar si hay más de una
-        if len(subtitle_tracks) > 1:
-            subtitle_options = [f"{track['properties']['language']} (Track {track['properties']['number']})" for track in subtitle_tracks]
-            selected_subtitle = simpledialog.askstring("Elija Pista de subtítulos", "Se encontraron varias pistas de subtítulos. Por favor elige uno:\n" + "\n".join(subtitle_options))
-            selected_subtitle_number = int(selected_subtitle.split(" ")[-1])
-            selected_subtitle_index = next((index for index, track in enumerate(subtitle_tracks) if track['properties']['number'] == selected_subtitle_number), None)
+        # Verificar si hay pistas de subtítulos antes de continuar
+        if subtitle_tracks:
+            # Preguntar al usuario qué pista de subtítulos desea utilizar si hay más de una
+            if len(subtitle_tracks) > 1:
+                subtitle_options = [f"{track['properties']['language']} (Track {track['properties']['number']})" for track in subtitle_tracks]
+                selected_subtitle = simpledialog.askstring("Elija Pista de subtítulos", "Se encontraron varias pistas de subtítulos. Por favor elige uno:\n" + "\n".join(subtitle_options))
+                selected_subtitle_number = int(selected_subtitle.split(" ")[-1])
+                selected_subtitle_index = next((index for index, track in enumerate(subtitle_tracks) if track['properties']['number'] == selected_subtitle_number), None)
+                
+                if selected_subtitle_index is None:
+                    messagebox.showerror("Error", "No se encontró la pista de subtítulos seleccionada.")
+                    return
+            else:
+                selected_subtitle_number = subtitle_tracks[0]['properties']['number']
+                selected_subtitle_index = 0
             
-            if selected_subtitle_index is None:
-                messagebox.showerror("Error", "No se encontró la pista de subtítulos seleccionada.")
-                return
+            # Convertir el archivo de subtítulos SRT al formato SSA
+            subtitle_file = input_file.replace('.mkv', f'.{selected_subtitle_number}.srt')
+            subprocess.run(['ffmpeg', '-i', input_file, '-map', f'0:s:{selected_subtitle_index}', subtitle_file])
         else:
-            selected_subtitle_number = subtitle_tracks[0]['properties']['number']
-            selected_subtitle_index = 0
+            # Si no hay pistas de subtítulos, establecer el nombre del archivo temporal como None
+            subtitle_file = None
         
-        # Convertir el archivo de subtítulos SRT al formato SSA
-        subtitle_file = input_file.replace('.mkv', f'.{selected_subtitle_number}.srt')
-        subprocess.run(['ffmpeg', '-i', input_file, '-map', f'0:s:{selected_subtitle_index}', subtitle_file])
+        # Ejecutar ffmpeg para exportar a MP4, especificando el archivo de subtítulos SSA (si existe) y la pista de audio seleccionada
+        command = ['ffmpeg', '-hwaccel', 'auto', '-i', input_file]
+        if subtitle_file:
+            command.extend(['-i', subtitle_file])
+        command.extend(['-y', '-v', 'error', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '128k', '-c:s', 'mov_text', '-metadata:s:s:0', 'language=spa', '-metadata:s:a:0', 'language=spa', '-map', '0:v?'])
+        if selected_audio_index is not None:
+            command.extend(['-map', f'0:a:{selected_audio_index}'])
+        if subtitle_file:
+            command.extend(['-map', '1:s:0'])
+        command.extend(['-stats', '-threads', '0', output_file])
         
-        # Ejecutar ffmpeg para exportar a MP4, especificando el archivo de subtítulos SSA y la pista de audio seleccionada
-        subprocess.run(['ffmpeg', '-hwaccel', 'auto', '-i', input_file, '-i', subtitle_file, '-y', '-v', 'error', '-c:v', 'copy', '-c:a', 'copy', '-c:s', 'mov_text', '-metadata:s:s:0', 'language=spa', '-metadata:s:a:0', 'language=spa', '-map', '0:v?', '-map', f'0:a:{selected_audio_index}', '-map', '1:s:0', '-stats', '-threads', '0', output_file])
+        subprocess.run(command)
         
-        # Eliminar el archivo de subtítulos temporal
-        os.remove(subtitle_file)
+        # Eliminar el archivo de subtítulos temporal si existe
+        if subtitle_file:
+            os.remove(subtitle_file)
         
         messagebox.showinfo("Exportación completa", "El archivo se ha exportado correctamente.")
+
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -99,7 +116,7 @@ frame_file_select.pack(pady=10)
 lbl_select_file = tk.Label(frame_file_select, text="Seleccione el archivo MKV:")
 lbl_select_file.grid(row=0, column=0)
 
-btn_browse = tk.Button(frame_file_select, text="Seleccionar", command=select_file)
+btn_browse = tk.Button(frame_file_select, text="Seleccionar", command=select_files)
 btn_browse.grid(row=0, column=1)
 
 txt_selected_file = tk.Text(frame_file_select, width=50, height=1)
@@ -114,9 +131,5 @@ lbl_info.pack()
 
 txt_info = tk.Text(frame_info, width=80, height=10)
 txt_info.pack()
-
-# Botón para exportar a MP4
-btn_export = tk.Button(root, text="Exportar", command=export_to_mp4)
-btn_export.pack(pady=10)
 
 root.mainloop()
