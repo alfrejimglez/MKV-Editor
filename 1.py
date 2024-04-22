@@ -31,7 +31,7 @@ def get_info(filename):
     subtitle_tracks = [track for track in info_dict['tracks'] if track['type'] == 'subtitles']
     # Crear una cadena de texto con la información de las pistas
     audio_info = "\n".join([f"Audio Track {track['properties']['number']}: {track['codec']} - {track['properties']['language']}" for track in audio_tracks])
-    subtitle_info = "\n".join([f"Subtitle Track {track['properties']['number']}: {track['properties']['track_name']} - {track['codec']} - {track['properties']['language']}" for track in subtitle_tracks])
+    subtitle_info = "\n".join([f"Subtitle Track {track['properties']['number']}: {track['properties'].get('track_name', 'N/A')} - {track['codec']} - {track['properties']['language']}" for track in subtitle_tracks])
     # Mostrar la información en el cuadro de texto
     txt_info.delete(1.0, tk.END)
     txt_info.tag_configure("bold", font=("Helvetica", 10, "bold"))
@@ -45,8 +45,8 @@ def get_info(filename):
 
     # Establecer el color rojo para el nombre del subtítulo
     for track in subtitle_tracks:
-        start_index = txt_info.search(track['properties']['track_name'], 1.0, tk.END)
-        end_index = f"{start_index}+{len(track['properties']['track_name'])}c"
+        start_index = txt_info.search(track['properties'].get('track_name', 'N/A'), 1.0, tk.END)
+        end_index = f"{start_index}+{len(track['properties'].get('track_name', 'N/A'))}c"
         txt_info.tag_add("red", start_index, end_index)
 
 def export_to_mp4(input_file):
