@@ -185,7 +185,7 @@ class EditorMKV(QWidget):
             #Argumentos para convertirlos segun vienen del mkv editado.
             #args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text", output_file]
             # Usar FFmpeg para convertir el archivo con subtítulos incrustados y manteniendo el audio y subtítulos en español
-            args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-c:s", "mov_text", "-metadata:s:s:0", "language=spa", "-metadata:s:a:0", "language=spa", output_file]
+            args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-c:s", "mov_text", "-metadata:s:s:0", "language=spa", "-metadata:s:a:0", "language=spa", output_file]
             subprocess.run(args)
             print(f"Archivo convertido a MP4 correctamente como '{output_file}' con subtítulos incrustados y audio/subtítulos en español.")
             self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4"
