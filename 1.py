@@ -10,7 +10,8 @@ class EditorMKV(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-    
+        self.output_file = None  # Variable de instancia para almacenar el nombre del archivo editado
+
     def initUI(self):
         self.setWindowTitle('Editor MKV')
         self.setGeometry(100, 100, 400, 400)
@@ -36,6 +37,7 @@ class EditorMKV(QWidget):
         self.selected_file = None
         self.audio_checkboxes = []
         self.subtitle_checkboxes = []
+        self.subtitle_buttons = []  # Lista para almacenar los botones "Extraer"
         self.label_audio = None
         self.label_subtitle = None
         
@@ -45,6 +47,11 @@ class EditorMKV(QWidget):
         
         self.layout.addWidget(self.button_edit)  
         
+        self.button_convert_mp4 = QPushButton('Convertir a MP4', self)
+        self.button_convert_mp4.clicked.connect(self.convertToMP4)
+        self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4" al inicio
+        self.layout.addWidget(self.button_convert_mp4)
+
         self.setLayout(self.layout)
     
     def selectFile(self):
@@ -54,12 +61,15 @@ class EditorMKV(QWidget):
             self.clearAudioAndSubtitleSelection()
             # Limpiar los labels de pistas de audio y subtítulos
             self.clearAudioAndSubtitleLabels()
+            # Limpiar los botones "Extraer"
+            self.clearSubtitleButtons()
             
             self.selected_file = filename
             self.label_selected_file.setText(os.path.basename(self.selected_file))  # Mostrar el nombre del archivo seleccionado
             self.showAudioAndSubtitleSelection()
             self.button_edit.show()  # Mostrar el botón "Editar"
-    
+            self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4"
+
     def showAudioAndSubtitleSelection(self):
         self.label_audio = QLabel(self)
         self.label_audio.setText("<b>Pistas de audio:</b>")
@@ -101,6 +111,7 @@ class EditorMKV(QWidget):
                 layout.addWidget(checkbox)
                 layout.addWidget(extract_button)
                 self.subtitle_layout.addLayout(layout)
+                self.subtitle_buttons.append(extract_button)  # Agregar el botón a la lista
 
     def extractSubtitle(self, track_id):
         output_file = os.path.splitext(self.selected_file)[0] + f"_subtitle_{track_id}.srt"
@@ -127,6 +138,12 @@ class EditorMKV(QWidget):
         if self.label_subtitle:
             self.label_subtitle.deleteLater()
             self.label_subtitle = None
+
+    def clearSubtitleButtons(self):
+        # Limpiar los botones "Extraer" si existen
+        for button in self.subtitle_buttons:
+            button.deleteLater()
+        self.subtitle_buttons = []
     
     def editFile(self):
         if self.selected_file:
@@ -153,8 +170,25 @@ class EditorMKV(QWidget):
 
             subprocess.run(args)
             print("Archivo editado correctamente.")
+            
+            # Almacenar el nombre del archivo editado en la variable de instancia
+            self.output_file = output_file
+            
+            self.button_convert_mp4.show()  # Mostrar el botón "Convertir a MP4"
         else:
             print("Por favor, selecciona un archivo MKV primero.")
+
+    def convertToMP4(self):
+        if self.output_file:  # Utilizar el archivo editado si está disponible
+            output_file = os.path.splitext(self.output_file)[0] + ".mp4"
+            # Usar FFmpeg para convertir el archivo con subtítulos incrustados
+            args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text", output_file]
+            subprocess.run(args)
+            print(f"Archivo convertido a MP4 correctamente como '{output_file}' con subtítulos incrustados.")
+            self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4"
+        else:
+            print("Por favor, edita un archivo MKV primero.")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
