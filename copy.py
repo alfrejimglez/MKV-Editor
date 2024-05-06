@@ -2,6 +2,7 @@ import sys
 import subprocess
 import os
 import json
+import pygame
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QLabel, QVBoxLayout, QCheckBox, QHBoxLayout
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
@@ -181,14 +182,23 @@ class EditorMKV(QWidget):
     def convertToMP4(self):
         if self.output_file:  # Utilizar el archivo editado si está disponible
             output_file = os.path.splitext(self.output_file)[0] + ".mp4"
-            # Usar FFmpeg para convertir el archivo con subtítulos incrustados
-            args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text", output_file]
+            #Argumentos para convertirlos segun vienen del mkv editado.
+            #args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text", output_file]
+            # Usar FFmpeg para convertir el archivo con subtítulos incrustados y manteniendo el audio y subtítulos en español
+            args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-c:s", "mov_text", "-metadata:s:s:0", "language=spa", "-metadata:s:a:0", "language=spa", output_file]
             subprocess.run(args)
-            print(f"Archivo convertido a MP4 correctamente como '{output_file}' con subtítulos incrustados.")
+            print(f"Archivo convertido a MP4 correctamente como '{output_file}' con subtítulos incrustados y audio/subtítulos en español.")
             self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4"
+            self.playSound()  # Reproducir sonido al finalizar la conversión
         else:
             print("Por favor, edita un archivo MKV primero.")
 
+    def playSound(self):
+            # Cargar el archivo de sonido
+            pygame.mixer.init()
+            pygame.mixer.music.load("finish.wav")  # sonifdo
+            # Reproducir el sonido
+            pygame.mixer.music.play()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

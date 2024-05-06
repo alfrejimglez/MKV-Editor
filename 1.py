@@ -3,9 +3,33 @@ import subprocess
 import os
 import json
 import pygame
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QLabel, QVBoxLayout, QCheckBox, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QLabel, QVBoxLayout, QCheckBox, QHBoxLayout, QLineEdit, QDialog, QDialogButtonBox
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
+
+class FilenameInputDialog(QDialog):
+    def __init__(self, current_filename="", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Editar Nombre de Archivo")
+        
+        self.input_line = QLineEdit(self)
+        self.input_line.setPlaceholderText("Ingrese el nuevo nombre de archivo")
+        self.input_line.setText(current_filename)  # Establecer el texto inicial con el nombre de archivo actual
+
+        buttons = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        button_box = QDialogButtonBox(buttons, Qt.Horizontal, self)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.input_line)
+        layout.addWidget(button_box)
+
+    def getFilename(self):
+        if self.exec_() == QDialog.Accepted:
+            return self.input_line.text()
+        else:
+            return None
 
 class EditorMKV(QWidget):
     def __init__(self):
@@ -162,7 +186,16 @@ class EditorMKV(QWidget):
             else:
                 subtitle_args = ["--no-subtitles"]  # Agregar el parámetro --no-subtitles si no se seleccionaron subtítulos
 
-            output_file = os.path.splitext(self.selected_file)[0] + "_edited.mkv"
+            # Obtener el nuevo nombre de archivo del usuario
+            new_filename = self.getNewFilename()
+            if new_filename:
+                # Si el usuario ingresó un nuevo nombre, usarlo para el archivo editado
+                if not new_filename.endswith(".mkv"):  # Verificar si ya contiene la extensión .mkv
+                    new_filename += ".mkv"  # Si no, agregarla
+                output_file = new_filename
+            else:
+                # Si el usuario canceló, usar el nombre predeterminado
+                output_file = os.path.splitext(self.selected_file)[0] + "_edited.mkv"
 
             args = ["mkvmerge", "-o", output_file] + audio_args + subtitle_args + [self.selected_file]
 
@@ -178,6 +211,11 @@ class EditorMKV(QWidget):
             self.button_convert_mp4.show()  # Mostrar el botón "Convertir a MP4"
         else:
             print("Por favor, selecciona un archivo MKV primero.")
+
+
+    def getNewFilename(self):
+        dialog = FilenameInputDialog(os.path.basename(self.selected_file), self)
+        return dialog.getFilename()
 
     def convertToMP4(self):
         if self.output_file:  # Utilizar el archivo editado si está disponible
