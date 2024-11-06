@@ -5,6 +5,7 @@ import json
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import simpledialog
+import winsound  # Importar winsound para reproducir sonidos
 
 class EditorMKV(tk.Tk):
     def __init__(self):
@@ -120,6 +121,9 @@ class EditorMKV(tk.Tk):
             subprocess.run(args)
             print("Archivo editado correctamente.")
             
+            # Reproducir sonido al finalizar la edición
+            winsound.PlaySound("finish.wav", winsound.SND_FILENAME)  # Reemplaza con la ruta de tu archivo de sonido
+            
             # Store the edited file name in the instance variable
             self.output_file = output_file
             
@@ -152,6 +156,10 @@ class EditorMKV(tk.Tk):
             # Execute ffmpeg with the arguments
             subprocess.run(args)
             print(f"Archivo convertido a MP4 correctamente como '{output_file}' con subtítulos incrustados y audio/subtítulos en español.")
+            
+            # Reproducir sonido al finalizar la conversión
+            winsound.PlaySound("ruta/a/tu/sonido.wav", winsound.SND_FILENAME)  # Reemplaza con la ruta de tu archivo de sonido
+            
             self.button_convert_mp4.config(state=tk.DISABLED)  # Disable convert button
         else:
             print("Por favor, edita un archivo MKV primero.")
