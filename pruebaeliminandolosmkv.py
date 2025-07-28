@@ -36,6 +36,7 @@ class EditorMKV(QWidget):
         super().__init__()
         self.initUI()
         self.output_file = None  # Variable de instancia para almacenar el nombre del archivo editado
+        self.original_file = None  # NUEVO: para almacenar el archivo original
 
     def initUI(self):
         self.setWindowTitle('Editor MKV')
@@ -84,16 +85,15 @@ class EditorMKV(QWidget):
         if filename:
             # Limpiar las listas de pistas de audio y subtítulos
             self.clearAudioAndSubtitleSelection()
-            # Limpiar los labels de pistas de audio y subtítulos
             self.clearAudioAndSubtitleLabels()
-            # Limpiar los botones "Extraer"
             self.clearSubtitleButtons()
             
             self.selected_file = filename
-            self.label_selected_file.setText(os.path.basename(self.selected_file))  # Mostrar el nombre del archivo seleccionado
+            self.original_file = filename  # Guardar el archivo original
+            self.label_selected_file.setText(os.path.basename(self.selected_file))
             self.showAudioAndSubtitleSelection()
-            self.button_edit.show()  # Mostrar el botón "Editar"
-            self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4"
+            self.button_edit.show()
+            self.button_convert_mp4.hide()
 
     def showAudioAndSubtitleSelection(self):
         self.label_audio = QLabel(self)
@@ -218,29 +218,28 @@ class EditorMKV(QWidget):
         return dialog.getFilename()
 
     def convertToMP4(self):
-        if self.output_file:  # Utilizar el archivo editado si está disponible
+        if self.output_file:
             output_file = os.path.splitext(self.output_file)[0] + ".mp4"
-            #Argumentos para convertirlos segun vienen del mkv editado.
-            #args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text", output_file]
-            # Usar FFmpeg para convertir el archivo con subtítulos incrustados y manteniendo el audio y subtítulos en español
-            args = ["ffmpeg", "-i", self.output_file, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-c:s", "mov_text", "-metadata:s:s:0", "language=spa", "-metadata:s:a:0", "language=spa", output_file]
+            # Guardar los nombres antes de la conversión
+            original_mkv = self.original_file
+            edited_mkv = self.output_file
+
+            args = ["ffmpeg", "-i", edited_mkv, "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", "-ac", "2", "-c:s", "mov_text", "-metadata:s:s:0", "language=spa", "-metadata:s:a:0", "language=spa", output_file]
             subprocess.run(args)
             print(f"Archivo convertido a MP4 correctamente como '{output_file}' con subtítulos incrustados y audio/subtítulos en español.")
-            self.button_convert_mp4.hide()  # Ocultar el botón "Convertir a MP4"
-            self.playSound()  # Reproducir sonido al finalizar la conversión
+            self.button_convert_mp4.hide()
+            self.playSound()
             try:
-                if os.path.exists(self.selected_file):  # Verificar si el archivo original existe
-                    os.remove(self.selected_file)  # Eliminar el archivo original
-                    print(f"Archivo original '{self.selected_file}' eliminado.")
-                
-                if os.path.exists(self.output_file):  # Verificar si el archivo editado existe
-                    os.remove(self.output_file)  # Eliminar el archivo editado
-                    print(f"Archivo editado '{self.output_file}' eliminado.")
+                # Eliminar ambos archivos MKV si existen y son distintos
+                if original_mkv and os.path.exists(original_mkv):
+                    os.remove(original_mkv)
+                    print(f"Archivo original '{original_mkv}' eliminado.")
+                if edited_mkv and os.path.exists(edited_mkv) and edited_mkv != original_mkv:
+                    os.remove(edited_mkv)
+                    print(f"Archivo editado '{edited_mkv}' eliminado.")
             except Exception as e:
-                # Capturar y mostrar errores al eliminar los archivos
                 print(f"Error al eliminar archivos MKV: {e}")
         else:
-            # Mensaje para el caso en que no se haya editado un archivo previamente
             print("Por favor, edita un archivo MKV primero.")
 
     def playSound(self):
