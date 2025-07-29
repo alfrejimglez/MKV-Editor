@@ -1,6 +1,14 @@
 import sys
-import subprocess
 import os
+#movida para que funcione con pyinstaller 
+if getattr(sys, 'frozen', False):
+    # Si está empaquetado con PyInstaller
+    os.chdir(os.path.dirname(sys.executable))
+else:
+    # Si se ejecuta como script normal
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+import subprocess
 import json
 import pygame
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QLabel, QVBoxLayout, QCheckBox, QHBoxLayout, QLineEdit, QDialog, QDialogButtonBox
