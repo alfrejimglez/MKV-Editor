@@ -15,6 +15,12 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QLa
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
+def resource_path(relative_path):
+    """Obtiene la ruta absoluta de un recurso empaquetado con PyInstaller."""
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 class FilenameInputDialog(QDialog):
     def __init__(self, current_filename="", parent=None):
         super().__init__(parent)
@@ -205,7 +211,8 @@ class EditorMKV(QWidget):
                 # Si el usuario canceló, usar el nombre predeterminado
                 output_file = os.path.splitext(self.selected_file)[0] + "_edited.mkv"
 
-            args = ["mkvmerge", "-o", output_file] + audio_args + subtitle_args + [self.selected_file]
+            mkvmerge_path = resource_path("mkvmerge.exe")
+            args = [mkvmerge_path, "-o", output_file] + audio_args + subtitle_args + [self.selected_file]
 
             print("Argumentos pasados a mkvmerge:")
             print(args)
@@ -251,11 +258,10 @@ class EditorMKV(QWidget):
             print("Por favor, edita un archivo MKV primero.")
 
     def playSound(self):
-            # Cargar el archivo de sonido
-            pygame.mixer.init()
-            pygame.mixer.music.load("finish.wav")  # sonifdo
-            # Reproducir el sonido
-            pygame.mixer.music.play()
+        sound_path = resource_path("finish.wav")
+        pygame.mixer.init()
+        pygame.mixer.music.load(sound_path)
+        pygame.mixer.music.play()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
