@@ -1,0 +1,1 @@
+pyinstaller --onefile --add-data "finish.wav;." --add-data "mkvmerge.exe;." pruebaeliminandolosmkv.py
