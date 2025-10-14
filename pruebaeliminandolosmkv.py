@@ -37,6 +37,11 @@ class FilenameInputDialog(QDialog):
 
         layout = QVBoxLayout(self)
         layout.addWidget(self.input_line)
+
+        button_auto = QPushButton("Nombre Limpio", self)
+        button_auto.clicked.connect(self.autoCleanFilename)
+        layout.addWidget(button_auto)
+
         layout.addWidget(button_box)
 
     def getFilename(self):
@@ -44,6 +49,38 @@ class FilenameInputDialog(QDialog):
             return self.input_line.text()
         else:
             return None
+     # --- NUEVO MÉTODO ---
+    def autoCleanFilename(self):
+        """
+        Limpia el nombre del archivo, manteniendo solo el título y el año entre paréntesis.
+        Elimina todo lo que venga después del año, manteniendo la extensión.
+        """
+        import re
+        import os
+
+        original_name = self.input_line.text()
+        name, ext = os.path.splitext(original_name)  # separar nombre y extensión
+
+        # Reemplazar puntos, guiones bajos o múltiples espacios por un solo espacio
+        name_clean = re.sub(r'[._]+', ' ', name).strip()
+
+        # Buscar el primer año de 4 dígitos
+        match = re.search(r'(19\d{2}|20\d{2})', name_clean)
+        if match:
+            year = match.group(1)
+            # Tomar todo lo que esté **antes del año**
+            title = name_clean.split(year)[0].strip()
+            clean_name = f"{title} ({year})"
+        else:
+            clean_name = name_clean
+
+        # Volver a añadir la extensión
+        clean_name += ext
+
+        self.input_line.setText(clean_name)
+
+
+
 
 class EditorMKV(QWidget):
     def __init__(self):
