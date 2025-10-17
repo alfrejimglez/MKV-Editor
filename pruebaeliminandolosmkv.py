@@ -52,32 +52,43 @@ class FilenameInputDialog(QDialog):
      # --- NUEVO MÉTODO ---
     def autoCleanFilename(self):
         """
-        Limpia el nombre del archivo, manteniendo solo el título y el año entre paréntesis.
-        Elimina todo lo que venga después del año, manteniendo la extensión.
+        Detecta el título y el año (en cualquier posición), lo limpia y elimina todo lo demás.
+        Formato final: 'Título (AÑO).ext'
         """
         import re
         import os
 
         original_name = self.input_line.text()
-        name, ext = os.path.splitext(original_name)  # separar nombre y extensión
+        name, ext = os.path.splitext(original_name)
 
         # Reemplazar puntos, guiones bajos o múltiples espacios por un solo espacio
         name_clean = re.sub(r'[._]+', ' ', name).strip()
 
-        # Buscar el primer año de 4 dígitos
-        match = re.search(r'(19\d{2}|20\d{2})', name_clean)
+        # 1️⃣ Buscar patrón 'Título (AÑO)' (año entre paréntesis)
+        match = re.search(r'^(.*?)\s*\(\s*(19\d{2}|20\d{2})\s*\)', name_clean)
         if match:
-            year = match.group(1)
-            # Tomar todo lo que esté **antes del año**
-            title = name_clean.split(year)[0].strip()
-            clean_name = f"{title} ({year})"
+            title = match.group(1).strip()
+            year = match.group(2)
         else:
-            clean_name = name_clean
+            # 2️⃣ Buscar título + año sin paréntesis, p. ej. "Agarralo como puedas 2025" o "...2025 al final"
+            match = re.search(r'^(.*?)(19\d{2}|20\d{2})$', name_clean)
+            if not match:
+                match = re.search(r'^(.*?)(19\d{2}|20\d{2})\D', name_clean)  # año no necesariamente al final exacto
+            if match:
+                title = match.group(1).strip()
+                year = match.group(2)
+            else:
+                # Si no hay año, simplemente dejar título limpio
+                self.input_line.setText(name_clean + ext)
+                return
 
-        # Volver a añadir la extensión
-        clean_name += ext
-
+        # Limpiar espacios dobles y dejar formato correcto
+        title = re.sub(r'\s{2,}', ' ', title).strip()
+        clean_name = f"{title} ({year}){ext}"
         self.input_line.setText(clean_name)
+
+
+
 
 
 
