@@ -250,6 +250,14 @@ class EditorMKV(QWidget):
         self.label_subtitle = None
         self.audio_layout = None
         self.subtitle_layout = None
+
+        # Botón para abrir otra instancia (Nueva Ventana)
+        self.button_new_instance = QPushButton('➕ Abrir otra ventana', self)
+        self.button_new_instance.setObjectName("ToolButton") # Usará el estilo naranja/púrpura
+        self.button_new_instance.setStyleSheet("background-color: #cba6f7; color: #1e1e2e;") # Color púrpura premium
+        self.button_new_instance.setCursor(Qt.PointingHandCursor)
+        self.button_new_instance.clicked.connect(self.openNewInstance)
+        self.main_layout.addWidget(self.button_new_instance)
     
     def selectFile(self):
         filename, _ = QFileDialog.getOpenFileName(self, 'Selecciona un archivo', '', 'Archivos MKV (*.mkv)')
@@ -332,6 +340,25 @@ class EditorMKV(QWidget):
         args = ["mkvextract", "tracks", self.selected_file, f"{track_id}:{output_file}"]
         subprocess.run(args)
         print(f"Subtítulo extraído correctamente como '{output_file}'.")
+
+    def openNewInstance(self):
+        """Lanza una nueva copia desplazada respecto a la ventana actual."""
+        try:
+            # 1. Obtenemos la posición actual de esta ventana (la que tiene el botón)
+            current_x = self.x()
+            current_y = self.y()
+            
+            # 2. Calculamos la nueva posición (desplazada 40px)
+            new_x = current_x + 40
+            new_y = current_y + 40
+            
+            # 3. LANZAMIENTO LIMPIO:
+            # Usamos sys.argv[0] para coger solo la ruta del programa 
+            # y le pasamos solo los nuevos parámetros de posición.
+            subprocess.Popen([sys.executable, sys.argv[0], "--pos", str(new_x), str(new_y)])
+            
+        except Exception as e:
+            print(f"No se pudo abrir una nueva instancia: {e}")
 
     def clearAudioAndSubtitleSelection(self):
         for checkbox in self.audio_checkboxes:
@@ -452,5 +479,18 @@ if __name__ == '__main__':
     app.setFont(font)
     
     editor = EditorMKV()
+    
+    # --- LÓGICA DE POSICIONAMIENTO CORREGIDA ---
+    args = QApplication.arguments() # Es más fiable que sys.argv en algunos casos
+    if "--pos" in args:
+        try:
+            idx = args.index("--pos")
+            nx = int(args[idx + 1])
+            ny = int(args[idx + 2])
+            editor.move(nx, ny) 
+        except (IndexError, ValueError):
+            pass 
+    # -------------------------------------------
+
     editor.show()
     sys.exit(app.exec_())
