@@ -1,1 +1,1 @@
-pyinstaller --onefile --add-data "finish.wav;." --add-data "mkvmerge.exe;." --add-data "mkvextract.exe;." ULTIMAVERSION.py
+pyinstaller --onefile --add-data "finish.wav;." --add-data "mkvmerge.exe;." --add-data "mkvextract.exe;." MkvEditor.py
