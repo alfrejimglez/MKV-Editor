@@ -301,6 +301,14 @@ class EditorMKV(QWidget):
         self.button_select.clicked.connect(self.selectFile)
         self.main_layout.addWidget(self.button_select)
 
+        self.button_play = QPushButton('Reproducir MKV', self)
+        self.button_play.setObjectName("ToolButton")
+        self.button_play.setCursor(Qt.PointingHandCursor)
+        self.button_play.setMinimumHeight(40)
+        self.button_play.clicked.connect(self.playSelectedMKV)
+        self.button_play.hide()
+        self.main_layout.addWidget(self.button_play)
+
         # Label Archivo Seleccionado
         self.label_selected_file = QLabel("Ningún archivo seleccionado", self)
         self.label_selected_file.setObjectName("SelectedFile")
@@ -396,6 +404,7 @@ class EditorMKV(QWidget):
             self.label_selected_file.setText(f"📄 {os.path.basename(self.selected_file)}")
             self.showAudioAndSubtitleSelection()
             self.button_edit.show()
+            self.button_play.show()
             self.button_convert_mp4.hide()
 
     def showAudioAndSubtitleSelection(self):
@@ -496,6 +505,19 @@ class EditorMKV(QWidget):
             
         except Exception as e:
             print(f"No se pudo abrir una nueva instancia: {e}")
+
+    def playSelectedMKV(self):
+        if self.selected_file and os.path.exists(self.selected_file):
+            try:
+                if sys.platform.startswith('win'):
+                    os.startfile(self.selected_file)
+                else:
+                    subprocess.Popen(['xdg-open' if sys.platform.startswith('linux') else 'open', self.selected_file])
+            except Exception as e:
+                print(f"Error al reproducir el MKV: {e}")
+                self.label_selected_file.setText(f"❌ No se pudo reproducir: {e}")
+        else:
+            self.label_selected_file.setText("❌ Selecciona un archivo MKV primero.")
 
     def clearAudioAndSubtitleSelection(self):
         for checkbox in self.audio_checkboxes:
