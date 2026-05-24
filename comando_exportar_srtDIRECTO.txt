@@ -1,1 +1,1 @@
-pyinstaller --onefile srtDIRECTO.py
+pyinstaller --onefile srtDIRECTOcompatibleconMKVconargumentos.py

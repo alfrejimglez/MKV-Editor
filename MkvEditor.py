@@ -640,20 +640,20 @@ class EditorMKV(QWidget):
         self.button_edit.setText("Proceso Terminado (Reiniciar App)")
         self.button_edit.setDisabled(True)
 
-        # Preguntar si quiere ejecutar srtDIRECTO.exe sobre el archivo generado
+        # Preguntar si quiere ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe sobre el archivo generado
         from PyQt5.QtWidgets import QMessageBox
         mp4_file = os.path.splitext(self.output_file)[0] + ".mp4"
         if os.path.exists(mp4_file):
             reply = QMessageBox.question(self, "¿Ejecutar srtDIRECTO?",
-                f"¿Quieres ejecutar srtDIRECTO.exe sobre el archivo generado?\n\n{os.path.basename(mp4_file)}",
+                f"¿Quieres ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe sobre el archivo generado?\n\n{os.path.basename(mp4_file)}",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
-                # Ejecutar srtDIRECTO.exe con el archivo como argumento
+                # Ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe con el archivo como argumento
                 try:
-                    exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTO.exe")
+                    exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTOcompatibleconMKVconargumentos.exe")
                     subprocess.Popen([exe_path, mp4_file])
                 except Exception as e:
-                    QMessageBox.warning(self, "Error", f"No se pudo ejecutar srtDIRECTO.exe:\n{e}")
+                    QMessageBox.warning(self, "Error", f"No se pudo ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe:\n{e}")
 
     def playSound(self):
         # TU LÓGICA: resource_path
