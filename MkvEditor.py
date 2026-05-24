@@ -637,9 +637,24 @@ class EditorMKV(QWidget):
         print("Conversión completada")
         self.button_convert_mp4.hide()
         self.playSound()
-        
         self.button_edit.setText("Proceso Terminado (Reiniciar App)")
         self.button_edit.setDisabled(True)
+
+        # Preguntar si quiere ejecutar srtDIRECTO.py sobre el archivo generado
+        from PyQt5.QtWidgets import QMessageBox
+        mp4_file = os.path.splitext(self.output_file)[0] + ".mp4"
+        if os.path.exists(mp4_file):
+            reply = QMessageBox.question(self, "¿Ejecutar srtDIRECTO.py?",
+                f"¿Quieres ejecutar srtDIRECTO.py sobre el archivo generado?\n\n{os.path.basename(mp4_file)}",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                # Ejecutar srtDIRECTO.py con el archivo como argumento
+                try:
+                    python_exe = sys.executable
+                    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTO.py")
+                    subprocess.Popen([python_exe, script_path, mp4_file])
+                except Exception as e:
+                    QMessageBox.warning(self, "Error", f"No se pudo ejecutar srtDIRECTO.py:\n{e}")
 
     def playSound(self):
         # TU LÓGICA: resource_path
