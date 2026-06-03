@@ -399,6 +399,8 @@ class EditorMKV(QWidget):
             
             self.selected_file = filename
             self.original_file = filename # TU LÓGICA
+            # Reiniciar indicador de subtítulos al seleccionar nuevo archivo
+            self.has_subtitles = False
             
             # Solo mostrar nombre base para limpieza visual
             self.label_selected_file.setText(f"📄 {os.path.basename(self.selected_file)}")
@@ -549,6 +551,9 @@ class EditorMKV(QWidget):
             selected_audio_tracks = [checkbox for checkbox in self.audio_checkboxes if checkbox.isChecked()]
             selected_subtitle_tracks = [checkbox for checkbox in self.subtitle_checkboxes if checkbox.isChecked()]
 
+            # Registrar si el usuario seleccionó subtítulos (para acciones posteriores)
+            self.has_subtitles = bool(selected_subtitle_tracks)
+
             audio_ids = [str(checkbox.track_id) for checkbox in selected_audio_tracks]
             audio_args = [f"--audio-tracks", ",".join(audio_ids)]
 
@@ -556,6 +561,9 @@ class EditorMKV(QWidget):
             language_args = []
             for track_id in audio_ids:
                 language_args.extend(["--language", f"{track_id}:spa"])
+
+            # Rastrear si hay subtítulos
+            self.has_subtitles = len(selected_subtitle_tracks) > 0
 
             if selected_subtitle_tracks:
                 subtitle_ids = [str(checkbox.track_id) for checkbox in selected_subtitle_tracks]
@@ -640,20 +648,22 @@ class EditorMKV(QWidget):
         self.button_edit.setText("Proceso Terminado (Reiniciar App)")
         self.button_edit.setDisabled(True)
 
-        # Preguntar si quiere ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe sobre el archivo generado
-        from PyQt5.QtWidgets import QMessageBox
-        mp4_file = os.path.splitext(self.output_file)[0] + ".mp4"
-        if os.path.exists(mp4_file):
-            reply = QMessageBox.question(self, "¿Ejecutar srtDIRECTO?",
-                f"¿Quieres ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe sobre el archivo generado?\n\n{os.path.basename(mp4_file)}",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                # Ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe con el archivo como argumento
-                try:
-                    exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTOcompatibleconMKVconargumentos.exe")
-                    subprocess.Popen([exe_path, mp4_file])
-                except Exception as e:
-                    QMessageBox.warning(self, "Error", f"No se pudo ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe:\n{e}")
+        # Solo preguntar si quiere ejecutar srtDIRECTO si hay subtítulos
+        if self.has_subtitles:
+            from PyQt5.QtWidgets import QMessageBox
+            mp4_file = os.path.splitext(self.output_file)[0] + ".mp4"
+            # Solo preguntar por srtDIRECTO si el usuario había seleccionado subtítulos
+            if os.path.exists(mp4_file) and self.has_subtitles:
+                reply = QMessageBox.question(self, "¿Ejecutar srtDIRECTO?",
+                    f"¿Quieres ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe sobre el archivo generado?\n\n{os.path.basename(mp4_file)}",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    # Ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe con el archivo como argumento
+                    try:
+                        exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTOcompatibleconMKVconargumentos.exe")
+                        subprocess.Popen([exe_path, mp4_file])
+                    except Exception as e:
+                        QMessageBox.warning(self, "Error", f"No se pudo ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe:\n{e}")
 
     def playSound(self):
         # TU LÓGICA: resource_path
