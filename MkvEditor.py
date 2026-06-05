@@ -195,6 +195,65 @@ class ConversionWorker(QThread):
         finally:
             self.finished.emit()
 
+class StyleSelectionDialog(QDialog):
+    """Diálogo para seleccionar el estilo de los subtítulos"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Seleccionar Estilo de Subtítulos")
+        self.setMinimumWidth(400)
+        self.setStyleSheet(STYLESHEET)
+        
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Título
+        title = QLabel("¿Qué estilo de subtítulos prefieres?", self)
+        title.setObjectName("Title")
+        layout.addWidget(title)
+        
+        # Botones para cada estilo
+        self.style = None
+        
+        button_blanco = QPushButton("⚪ Blanco (Fondo transparente)", self)
+        button_blanco.setObjectName("PrimaryAction")
+        button_blanco.setMinimumHeight(45)
+        button_blanco.setCursor(Qt.PointingHandCursor)
+        button_blanco.clicked.connect(lambda: self.selectStyle("blanco"))
+        layout.addWidget(button_blanco)
+        
+        button_rojo = QPushButton("🔴 Rojo (Texto rojo)", self)
+        button_rojo.setStyleSheet(STYLESHEET + "\nQPushButton { background-color: #f38ba8; }\nQPushButton:hover { background-color: #f5a2bd; }")
+        button_rojo.setMinimumHeight(45)
+        button_rojo.setCursor(Qt.PointingHandCursor)
+        button_rojo.clicked.connect(lambda: self.selectStyle("rojo"))
+        layout.addWidget(button_rojo)
+        
+        button_gris = QPushButton("⚫ Gris (Fondo oscuro)", self)
+        button_gris.setStyleSheet(STYLESHEET + "\nQPushButton { background-color: #6c7086; }\nQPushButton:hover { background-color: #7c8096; }")
+        button_gris.setMinimumHeight(45)
+        button_gris.setCursor(Qt.PointingHandCursor)
+        button_gris.clicked.connect(lambda: self.selectStyle("gris"))
+        layout.addWidget(button_gris)
+        
+        layout.addStretch()
+        
+        # Botón Cancelar
+        button_cancel = QPushButton("❌ Cancelar", self)
+        button_cancel.setObjectName("SmallButton")
+        button_cancel.setCursor(Qt.PointingHandCursor)
+        button_cancel.clicked.connect(self.reject)
+        layout.addWidget(button_cancel)
+    
+    def selectStyle(self, style):
+        self.style = style
+        self.accept()
+    
+    def getStyle(self):
+        if self.exec_() == QDialog.Accepted:
+            return self.style
+        return None
+
 class FilenameInputDialog(QDialog):
     def __init__(self, current_filename="", parent=None):
         super().__init__(parent)
@@ -654,16 +713,35 @@ class EditorMKV(QWidget):
             mp4_file = os.path.splitext(self.output_file)[0] + ".mp4"
             # Solo preguntar por srtDIRECTO si el usuario había seleccionado subtítulos
             if os.path.exists(mp4_file) and self.has_subtitles:
-                reply = QMessageBox.question(self, "¿Ejecutar srtDIRECTO?",
-                    f"¿Quieres ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe sobre el archivo generado?\n\n{os.path.basename(mp4_file)}",
+                reply = QMessageBox.question(self, "¿Quemar Subtítulos?",
+                    f"¿Quieres quemar los subtítulos en el video?\n\n{os.path.basename(mp4_file)}",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.Yes:
-                    # Ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe con el archivo como argumento
-                    try:
-                        exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTOcompatibleconMKVconargumentos.exe")
-                        subprocess.Popen([exe_path, mp4_file])
-                    except Exception as e:
-                        QMessageBox.warning(self, "Error", f"No se pudo ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe:\n{e}")
+                    # Mostrar diálogo de selección de estilo
+                    style_dialog = StyleSelectionDialog(self)
+                    selected_style = style_dialog.getStyle()
+                    
+                    if selected_style:
+                        self.button_edit.setText("⏳ Quemando subtítulos...")
+                        self.button_edit.setDisabled(True)
+                        QApplication.processEvents()
+                        
+                        print(f"Estilo seleccionado en GUI: {selected_style}")
+                        
+                        # Ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe con el archivo y estilo
+                        try:
+                            exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTOcompatibleconMKVconargumentos.exe")
+                            # Pasar el archivo y el estilo como argumentos
+                            result = subprocess.run([exe_path, mp4_file, selected_style], 
+                                                   capture_output=False,
+                                                   timeout=600)  # timeout de 10 minutos
+                            self.button_edit.setText("✅ ¡Proceso completado!")
+                            self.label_selected_file.setText(f"✅ Subtítulos quemados: {os.path.basename(mp4_file).replace('.mp4', '_subburn.mp4')}")
+                        except Exception as e:
+                            QMessageBox.warning(self, "Error", f"No se pudo ejecutar el quemado de subtítulos:\n{e}")
+                            self.button_edit.setText("❌ Error en el quemado")
+                    # Si el usuario cancela la selección de estilo, no hacer nada
+
 
     def playSound(self):
         # TU LÓGICA: resource_path

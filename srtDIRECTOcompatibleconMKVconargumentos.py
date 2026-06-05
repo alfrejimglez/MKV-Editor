@@ -198,12 +198,24 @@ def main():
         if not file_arg.exists():
             print(f"[ERROR] El archivo no existe: {file_arg}")
             return
-        style = input("Estilo [B]lanco, [R]ojo, [G]ris: ").strip().lower()
-        style = (
-            "rojo" if style in ["r", "rojo"]
-            else "gris" if style in ["g", "gris"]
-            else "blanco"
-        )
+        
+        # Si hay un segundo argumento, usarlo como estilo; si no, preguntar
+        if len(sys.argv) > 2:
+            style_raw = sys.argv[2].strip().lower()
+            style = (
+                "rojo" if style_raw in ["r", "rojo"]
+                else "gris" if style_raw in ["g", "gris"]
+                else "blanco"
+            )
+        else:
+            style = input("Estilo [B]lanco, [R]ojo, [G]ris: ").strip().lower()
+            style = (
+                "rojo" if style in ["r", "rojo"]
+                else "gris" if style in ["g", "gris"]
+                else "blanco"
+            )
+        print(f"Estilo usado en srtDIRECTO: {style}")
+        
         srts = sorted(base.glob("*.srt"))
         srt, auto_ok = find_matching_srt(file_arg, srts)
         # si no hay srt ni subtítulos internos -> skip
