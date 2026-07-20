@@ -16,12 +16,28 @@ def script_dir() -> Path:
     return Path(__file__).resolve().parent
 
 def ffmpeg_bin() -> str:
+    # 1. Buscar en la carpeta del script/ejecutable actual
     p = script_dir() / "ffmpeg.exe"
-    return str(p) if p.exists() else "ffmpeg"
+    if p.exists(): return str(p)
+    
+    # 2. Buscar en la carpeta temporal de PyInstaller (si estamos en una)
+    if getattr(sys, "_MEIPASS", None):
+        p_meipass = Path(sys._MEIPASS) / "ffmpeg.exe"
+        if p_meipass.exists(): return str(p_meipass)
+
+    return "ffmpeg"
 
 def ffprobe_bin() -> str:
+    # 1. Buscar en la carpeta del script/ejecutable actual
     p = script_dir() / "ffprobe.exe"
-    return str(p) if p.exists() else "ffprobe"
+    if p.exists(): return str(p)
+    
+    # 2. Buscar en la carpeta temporal de PyInstaller
+    if getattr(sys, "_MEIPASS", None):
+        p_meipass = Path(sys._MEIPASS) / "ffprobe.exe"
+        if p_meipass.exists(): return str(p_meipass)
+
+    return "ffprobe"
 
 def has_nvenc(ffmpeg: str) -> bool:
     try:
@@ -198,14 +214,19 @@ def main():
             style_raw = sys.argv[2].strip().lower()
             style = "rojo" if style_raw in ["r", "rojo"] else "gris" if style_raw in ["g", "gris"] else "blanco"
         else:
-            style = input("Estilo [B]lanco, [R]ojo, [G]ris: ").strip().lower()
-            style = "rojo" if style in ["r", "rojo"] else "gris" if style in ["g", "gris"] else "blanco"
+            # Si se llama desde la GUI pero falta el estilo, no bloquear con input
+            style = "blanco"
         
         print(f"Estilo usado: {style}\n")
         videos_to_check = [file_arg]
     else:
-        style = input("Estilo [B]lanco, [R]ojo, [G]ris: ").strip().lower()
-        style = "rojo" if style in ["r", "rojo"] else "gris" if style in ["g", "gris"] else "blanco"
+        # Modo interactivo (solo si no hay argumentos)
+        try:
+            style = input("Estilo [B]lanco, [R]ojo, [G]ris: ").strip().lower()
+            style = "rojo" if style in ["r", "rojo"] else "gris" if style in ["g", "gris"] else "blanco"
+        except EOFError:
+            style = "blanco"
+            
         videos_to_check = sorted(base.glob("*.mp4")) + sorted(base.glob("*.mkv"))
         print("\nBuscando vídeos en la carpeta...")
 

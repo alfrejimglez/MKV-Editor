@@ -730,9 +730,16 @@ class EditorMKV(QWidget):
                         
                         print(f"Estilo seleccionado en GUI: {selected_style}")
                         
-                        # Ejecutar srtDIRECTOcompatibleconMKVconargumentos.exe con el archivo y estilo
+                        # Ejecutar SRTDIRECTOINTENTANDOMEJORAR.exe con el archivo y estilo
                         try:
-                            exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "srtDIRECTOcompatibleconMKVconargumentos.exe")
+                            # Usamos resource_path para encontrar el ejecutable empaquetado
+                            exe_path = resource_path("SRTDIRECTOINTENTANDOMEJORAR.exe")
+                            
+                            # Si no existe en resource_path (ejecución como script), buscar en la carpeta actual
+                            if not os.path.exists(exe_path):
+                                exe_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "SRTDIRECTOINTENTANDOMEJORAR.exe")
+
+                            print(f"Lanzando quemado desde: {exe_path}")
                             # Pasar el archivo y el estilo como argumentos
                             result = subprocess.run([exe_path, mp4_file, selected_style], 
                                                    capture_output=False,
