@@ -1,1 +1,2 @@
 pyinstaller --onefile --add-data "finish.wav;." --add-data "mkvmerge.exe;." --add-data "mkvextract.exe;." --add-data "srtDIRECTOcompatibleconMKVconargumentos.exe;." MkvEditor.py
+pyinstaller --onefile --add-data "finish.wav;." --add-data "mkvmerge.exe;." --add-data "mkvextract.exe;." --add-data "SRTDIRECTOINTENTANDOMEJORAR.exe;." MkvEditor.py
