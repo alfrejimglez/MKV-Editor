@@ -441,8 +441,8 @@ class EditorMKV(QWidget):
         self.audio_layout = None
         self.subtitle_layout = None
 
-        # Botón para abrir otra instancia (Nueva Ventana)
-        self.button_new_instance = QPushButton('➕ Abrir otra ventana', self)
+        # Botón para abrir otra instancia (Script Completo)
+        self.button_new_instance = QPushButton('➕ Abrir script completo', self)
         self.button_new_instance.setObjectName("ToolButton") # Usará el estilo naranja/púrpura
         self.button_new_instance.setStyleSheet("background-color: #cba6f7; color: #1e1e2e;") # Color púrpura premium
         self.button_new_instance.setCursor(Qt.PointingHandCursor)
@@ -549,23 +549,25 @@ class EditorMKV(QWidget):
         print(f"Subtítulo extraído correctamente como '{output_file}'.")
 
     def openNewInstance(self):
-        """Lanza una nueva copia desplazada respecto a la ventana actual."""
+        """Lanza una nueva copia del script completo."""
         try:
-            # 1. Obtenemos la posición actual de esta ventana (la que tiene el botón)
-            current_x = self.x()
-            current_y = self.y()
-            
-            # 2. Calculamos la nueva posición (desplazada 40px)
-            new_x = current_x + 40
-            new_y = current_y + 40
-            
-            # 3. LANZAMIENTO LIMPIO:
-            # Usamos sys.argv[0] para coger solo la ruta del programa 
-            # y le pasamos solo los nuevos parámetros de posición.
-            subprocess.Popen([sys.executable, sys.argv[0], "--pos", str(new_x), str(new_y)])
+            # Determinamos la ruta del ejecutable o script
+            if getattr(sys, 'frozen', False):
+                # Si es un EXE de PyInstaller
+                script_path = sys.executable
+                subprocess.Popen([script_path])
+            else:
+                # Si es un script .py normal, intentamos usar os.startfile para Windows
+                # o subprocess con el intérprete de python
+                script_path = os.path.abspath(sys.argv[0])
+                if sys.platform.startswith('win'):
+                    os.startfile(script_path)
+                else:
+                    subprocess.Popen([sys.executable, script_path])
             
         except Exception as e:
             print(f"No se pudo abrir una nueva instancia: {e}")
+            self.label_selected_file.setText(f"❌ Error al abrir script: {e}")
 
     def playSelectedMKV(self):
         if self.selected_file and os.path.exists(self.selected_file):
@@ -764,18 +766,5 @@ if __name__ == '__main__':
         pass
     
     editor = EditorMKV()
-    
-    # --- LÓGICA DE POSICIONAMIENTO CORREGIDA ---
-    args = QApplication.arguments() # Es más fiable que sys.argv en algunos casos
-    if "--pos" in args:
-        try:
-            idx = args.index("--pos")
-            nx = int(args[idx + 1])
-            ny = int(args[idx + 2])
-            editor.move(nx, ny) 
-        except (IndexError, ValueError):
-            pass 
-    # -------------------------------------------
-
     editor.show()
     sys.exit(app.exec_())
